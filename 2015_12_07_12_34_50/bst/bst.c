@@ -26,6 +26,23 @@ bst_create(bst_comparison_func *bst_compare, void *bst_param,
 	return tree;;
 }
 
+void*
+bst_find(const struct bst_table *t, void *item)
+{
+	struct bst_node *p;
+	int dir;
+	int cmp;
+
+	assert(t != NULL && item != NULL);
+	for (p = t->bst_root; p != NULL; p = p->bst_link[dir]) {
+		cmp = t->bst_compare(item, p->bst_data, t->bst_param);	
+		if (cmp == 0)
+			return p->bst_data;
+		dir = cmp > 0;
+	}
+	return NULL;	
+}
+
 int main(void)
 {
 	return 0;
