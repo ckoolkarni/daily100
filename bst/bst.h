@@ -37,7 +37,7 @@ struct bst_table {
 	struct bst_node *bst_root;
 	bst_comparison_func *bst_compare;
 	void *bst_param;
-	struct libavl_allocator *bst_alloc;
+	struct libavl_allocator *a;
 	size_t bst_count;
 	unsigned long bst_generation;
 };
