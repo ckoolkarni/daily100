@@ -230,8 +230,9 @@ decrease_key(struct min_heap *mh, int v, int dist)
 	print_min_heap(mh);
 }
 
+
 int
-is_min_heap(struct min_heap *mh, int v)
+is_in_min_heap(struct min_heap *mh, int v)
 {
 	return mh->pos[v] < mh->size;
 }
@@ -332,6 +333,28 @@ main(int argc, char *argv[])
 	decrease_key(mh, src, dist[src]);
 	print_min_heap(mh);
 	/* print_arr(dist, v);*/
+    mh->size = v;
+	while (is_empty(mh)) {
+		int u;
+		struct adjl_node *t;
+		struct min_heap_node *next_min_node;
+
+		next_min_node = extract_min(mh);
+		u = next_min_node->v;
+		t = graph->array[u].head;
+		while (t != NULL) {
+			int v;
+
+			v = t->dest;
+			if (is_in_min_heap(mh, v) && dist[u] != INT_MAX &&
+								t->weight + dist[u] < dist[v]) {
+				dist[v] = t->weight + dist[u];
+				decrease_key(mh, v, dist[v]);
+			}
+			t = t->next;
+		}	
+	}
+
 	return 0;
 }
 
