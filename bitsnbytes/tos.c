@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 
 	x = atoi(argv[1]);
 	y = atoi(argv[2]);
-    t = (x ^ y) >> 31;
+	t = (x ^ y) >> 31;
 	x = (x + t) ^ t;
 	printf("%d\n", x);
 	return 0;
