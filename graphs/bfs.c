@@ -15,14 +15,46 @@ struct node {
 
 struct graph {
 	int nvertices;
-	struct node **adj_list_array;   
+	struct node **adj_list_array;
 };
 
-struct node * 
+struct queue_node {
+    void *data;
+	struct queue_node *next;
+	struct queue_node *prev;
+};
+
+struct queue {
+	struct queue_node *head;
+	struct queue_node *tail;
+	unsigned long long current_length;
+};
+
+void
+print_graph(struct graph *g)
+{
+	int i;
+	int flag;
+	struct node *temp;
+
+	assert(g != NULL);
+	for (i = 0; i < g->nvertices; i++) {
+		printf("HEAD-->");
+		flag = 0;
+		for (temp = g->adj_list_array[i]; temp != NULL; temp = temp->next) {
+			flag = 1;
+			printf("[%p id %2d dest = %2d]<--", temp, temp->id, temp->dest);
+		}
+		printf("%s\n", flag == 1 ? "TAIL" : "NULL" );
+	}
+}
+
+struct node *
 alloc_node(int src, int dest, int weight)
 {
 	struct node *n;
 
+	assert(src >= 0 && dest >= 0 && src != dest);
 	if ((n = (struct node *) malloc(sizeof(*n))) == NULL) {
 		fprintf(stderr, "malloc failed\n");
 		exit(EXIT_FAILURE);
@@ -49,6 +81,7 @@ creat_graph(int vertices)
 	int i;
 	struct graph *g;
 	
+	assert(vertices > 0);
 	if ((g = (struct graph *) malloc(sizeof (struct graph))) == NULL) {
 		fprintf(stderr, "malloc failed\n");
 		exit(EXIT_FAILURE);
@@ -79,58 +112,30 @@ add_edge(struct graph *g, int src, int dest, int weight)
 	n = alloc_node(src, dest, weight);
 	t = g->adj_list_array[src];
 
-	while (t->next != NULL) 
+	while (t->next != NULL)
 		t = t->next;
 	t->next = n;
 	n->prev = t;
 }
 
 void
-print_graph(struct graph *g)
-{
-	int i;
-	int flag;
-	struct node *temp;
-
-	for (i = 0; i < g->nvertices; i++) {
-		printf("HEAD-->");
-		flag = 0;
-		for (temp = g->adj_list_array[i]; temp != NULL; temp = temp->next) { 
-			flag = 1;
-			printf("[%p id %2d dest = %2d]<--", temp, temp->id, temp->dest);
-		}
-		printf("%s\n", flag == 1 ? "TAIL" : "NULL" );
-	}
-}
-
-struct queue_node {
-    void *data;
-	struct queue_node *next;
-	struct queue_node *prev;
-};
-
-struct queue {
-	struct queue_node *head;
-	struct queue_node *tail;
-	unsigned long long current_length;
-};
-
-void
 print_queue(struct queue *q)
 {
 	struct queue_node *t;
 
+	assert(q != NULL);
 	printf("HEAD ");
 	for (t = q->head; t != NULL; t = t->prev)
 		printf("<-%p ", t->data);
 	printf("<-TAIL\n");
 }
 
-struct queue_node * 
+struct queue_node *
 alloc_queue_node(void *data)
 {
 	struct queue_node *n;
 
+	assert(data != NULL);
 	if ((n = (struct queue_node *) malloc(sizeof(struct queue_node))) == NULL) {
 		fprintf(stderr, "malloc failed\n");
 		exit(EXIT_FAILURE);
@@ -171,6 +176,7 @@ enqueue(struct queue *q, void *data)
 {
 	struct queue_node *n;
 
+	assert(q != NULL && data != NULL);
 	n = alloc_queue_node(data);
 
 	if (q->head == NULL && q->tail == NULL) {
@@ -189,6 +195,7 @@ dequeue(struct queue *q)
 	void *data;
 	struct queue_node *t;
 
+	assert(q != NULL);
 	if (q->head == NULL || q->tail == NULL) {
 		fprintf(stderr, "Queue Underflow\n");
 		exit(EXIT_FAILURE);
@@ -211,15 +218,16 @@ dequeue(struct queue *q)
 int
 is_empty(struct queue *q)
 {
+	assert(q != NULL);
 	return q->head == NULL && q->tail == NULL;	
 }
 
-unsigned long long 
+unsigned long long
 get_current_length(struct queue *q)
 {
+	assert(q != NULL);
 	return q->current_length;
 }
-
 
 void
 bfs(struct graph *g, int src)
@@ -227,7 +235,7 @@ bfs(struct graph *g, int src)
 	struct queue *q;
 	struct node *curr;
 
-	assert(g != NULL);
+	assert(g != NULL && src >= 0);
 
 	q = create_queue();
 
@@ -252,9 +260,9 @@ int main(int argc, char *argv[])
 {
 	struct graph *g;
 
-	g = creat_graph(14);
 
 #if 0
+	g = creat_graph(4);
 	/* Graph 1 */
 	add_edge(g, 0, 1, 10);
 	add_edge(g, 0, 2, 5);
@@ -262,6 +270,7 @@ int main(int argc, char *argv[])
 	add_edge(g, 2, 3, 15);
 #endif
 	/* Graph 2 */
+	g = creat_graph(14);
 	add_edge(g, 0, 1, 4);
     add_edge(g, 0, 7, 8);
     add_edge(g, 1, 2, 8);
@@ -281,36 +290,3 @@ int main(int argc, char *argv[])
     bfs(g, 0);
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
