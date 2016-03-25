@@ -107,6 +107,11 @@ pop(struct stack *s)
 	return data;
 }
 
+int
+is_empty(struct stack *s) 
+{
+	return s->top == NULL;
+}
 
 int main(void)
 {
@@ -129,6 +134,10 @@ int main(void)
 	print_stack(s);
     push(s, 16);
 	print_stack(s);
+	if (! is_empty(s))
+		printf("Not Empty\n");
+	else 
+		printf("Empty\n");
 
     pop(s);
 	print_stack(s);
@@ -144,5 +153,10 @@ int main(void)
 	print_stack(s);
     pop(s);
 	print_stack(s);
+
+	if (! is_empty(s))
+		printf("Not Empty\n");
+	else 
+		printf("Empty\n");
 	return 0;
 }
