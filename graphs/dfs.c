@@ -232,18 +232,16 @@ dfs(struct graph *g, int src)
 	assert(g != NULL);
 
 	s = creat_stack();
-	/*
-	push(s, g->adj_list_array[src]);
-	printf("%d \n", g->adj_list_array[src]->id);
-	*/
+
 	if (g->adj_list_array[src]->visited == false) {
 		printf("push %d ", g->adj_list_array[src]->id);
 		push(s, g->adj_list_array[src]);
 	}
+
 	while (! is_empty(s)) {
 		curr = (struct node*) s->top->data;
 		if (curr->visited == false) {
-
+            /* process_vertex_early */
 			curr = curr->next;
 			while (curr != NULL && curr->visited == true) {
 				curr = curr->next;
@@ -253,12 +251,14 @@ dfs(struct graph *g, int src)
 				curr->visited = true;
 				if (g->adj_list_array[curr->dest]->visited == false) {
 					printf("push %d ", g->adj_list_array[curr->dest]->id);
+					/* process_edge */
 					push(s, g->adj_list_array[curr->dest]);
 				}
 			} else {
-					curr = pop(s);
-					curr->visited = true;
-					printf("pop %d ", curr->id);
+				curr = pop(s);
+				curr->visited = true;
+				printf("pop %d ", curr->id);
+				/* process_vertex_later */
 			}
 		}
 	}
