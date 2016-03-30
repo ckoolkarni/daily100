@@ -95,6 +95,7 @@ create_graph(int nvertices)
 	}
 	g->time = 0;
     g->nvertices = nvertices;
+	g->finished = false;
 	g->directed = true;
 	for (i = 0; i < nvertices; i++) {
 		g->array[i] = alloc_node(i, INT_MAX);
@@ -145,20 +146,39 @@ destroy_graph(struct graph *g)
 	free(g);
 }
 
-void
-procress_vertex_early(struct graph *g, truct node *v)
+
+void 
+find_path(struct graph *g, int start, int end)
 {
-	printf("%d ", v->id);
+	assert(g != NULL);
+
+	if ((start == end) || end == -1) {
+		printf("\n%d", start);
+	} else {
+		find_path(g, start, g->array[end]->parent); 
+		printf("\n%d", end);
+	}
+}
+
+void
+process_vertex_early(struct graph *g, int v)
+{
+	printf("%d ", v);
 }
 
 void 
 process_edge(struct graph *g, int x, int y)
 {
-
+	if (g->array[y]->discovered == true && g->array[x]->parent != y) {
+		g->finished = true;
+		printf("cycle from %d %d\n",y, x);
+		find_path(g, y, x);
+		printf("\n\n");
+	}
 }
 
 void 
-process_vertex_late(struct graph *g, struct node *v)
+process_vertex_late(struct graph *g, int v)
 {
 
 }
@@ -166,7 +186,6 @@ process_vertex_late(struct graph *g, struct node *v)
 void
 dfs(struct graph *g, int src)
 {
-	struct stack *s;
 	struct node *t;
 	struct node *curr;
   
@@ -179,21 +198,20 @@ dfs(struct graph *g, int src)
 	g->array[src]->discovered = true;
 	g->array[src]->entry_time = g->time;
     t = curr = g->array[src];
- 	process_vertex_early(curr);
+ 	process_vertex_early(g, src);
     for (curr = curr->next; curr != NULL; curr = curr->next) {
 		if (g->array[curr->dest]->discovered == false) {
 			g->array[curr->dest]->parent = src;
-			process_edge(src, curr->dest);
+			process_edge(g, src, curr->dest);
 			dfs(g, curr->dest);
 			/* ??? */
-		} else if (! g->array[curr->dest]->processed) {
-			process_edge(src, curr->dest);
+		} else if ((! g->array[curr->dest]->processed) || g->directed == true) {
+			process_edge(g, src, curr->dest);
 		}
 		if (g->finished)
 			return;
 	}
-	
-	process_vertex_early(t);
+	process_vertex_late(g, src);
 	g->time++;
 	t->exit_time = g->time;
 	t->processed = true;
