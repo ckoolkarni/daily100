@@ -146,9 +146,9 @@ destroy_graph(struct graph *g)
 }
 
 void
-procress_vertex_early(struct graph *g, truct node *v)
+process_vertex_early(struct graph *g, int v)
 {
-	printf("%d ", v->id);
+
 }
 
 void 
@@ -158,7 +158,7 @@ process_edge(struct graph *g, int x, int y)
 }
 
 void 
-process_vertex_late(struct graph *g, struct node *v)
+process_vertex_late(struct graph *g, int v)
 {
 
 }
@@ -166,7 +166,6 @@ process_vertex_late(struct graph *g, struct node *v)
 void
 dfs(struct graph *g, int src)
 {
-	struct stack *s;
 	struct node *t;
 	struct node *curr;
   
@@ -179,21 +178,21 @@ dfs(struct graph *g, int src)
 	g->array[src]->discovered = true;
 	g->array[src]->entry_time = g->time;
     t = curr = g->array[src];
- 	process_vertex_early(curr);
+ 	process_vertex_early(g, src);
     for (curr = curr->next; curr != NULL; curr = curr->next) {
 		if (g->array[curr->dest]->discovered == false) {
 			g->array[curr->dest]->parent = src;
-			process_edge(src, curr->dest);
+			process_edge(g, src, curr->dest);
 			dfs(g, curr->dest);
 			/* ??? */
 		} else if (! g->array[curr->dest]->processed) {
-			process_edge(src, curr->dest);
+			process_edge(g, src, curr->dest);
 		}
 		if (g->finished)
 			return;
 	}
 	
-	process_vertex_early(t);
+	process_vertex_early(g, src);
 	g->time++;
 	t->exit_time = g->time;
 	t->processed = true;
