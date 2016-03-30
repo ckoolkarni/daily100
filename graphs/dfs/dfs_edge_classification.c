@@ -235,24 +235,46 @@ dfs(struct graph *g, int src)
 }
 
 struct graph *
-build_graph(void)
+build_graph(char *fname, int nvertices)
 {
+	int x;
+	int y;
+	FILE *fp;
 	struct graph *g;
 
+	if ((fp = fopen(fname, "r")) == NULL) {
+		perror("ERROR : ");
+		exit(EXIT_FAILURE);
+	}
+
+	g = create_graph(nvertices);
+
+	while (fscanf(fp, "%d %d", &x, &y) != EOF) {
+		printf("x = %d y = %d\n", x, y);
+		add_edge(g, x, y);
+	}	
+	
+	fclose(fp);
 	return g;
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
-	int i;
 	struct graph *g;
 
-	g = build_graph();
-	for (i = 0; i < g->nvertices; i++) {
-		printf("--------------------%d--------------------\n", i);
-		dfs(g, i);
-		print_graph(g);
+	if (argc != 3) {
+		fprintf(stderr, "Usage %s <edge_list_file_path> <number_of_vertices>\n"
+				, argv[0]);
+		exit(EXIT_FAILURE);
 	}
+
+	g = build_graph(argv[1], atoi(argv[2]));
+
+	print_graph(g);
+	dfs(g, 0);
+	
+	print_graph(g);
+
 	destroy_graph(g);
 	return 0;
 }
