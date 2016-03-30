@@ -17,6 +17,8 @@ struct node {
 	int dest;
 	int weight;
 	int parent;
+	int reachable_ancestor;
+	int tree_out_degree;
 	bool processed;
 	bool discovered;
     unsigned long entry_time;
@@ -70,6 +72,8 @@ alloc_node(int src, int dest)
 	n->parent = INT_MAX;
 	n->entry_time = INT_MAX;
 	n->exit_time = INT_MAX;
+	n->reachable_ancestor = INT_MAX;
+	n->tree_out_degree = INT_MAX;
 	n->processed = false;
 	n->discovered = false;
 	n->edge_type = UNCLASSIFIED;
@@ -155,24 +159,6 @@ destroy_graph(struct graph *g)
 	free(g);
 }
 
-void
-process_vertex_early(struct graph *g, int v)
-{
-
-}
-
-void 
-process_edge(struct graph *g, int x, int y)
-{
-
-}
-
-void 
-process_vertex_late(struct graph *g, int v)
-{
-
-}
-
 enum EDGE_TYPE 
 edge_classifiaction(struct graph *g, int x, int y)
 {
@@ -198,6 +184,69 @@ edge_classifiaction(struct graph *g, int x, int y)
 	printf("ERROR EDGE (%d %d) is UNCLASSIFIED Edge\n", x, y);
 	return UNCLASSIFIED;
 }
+
+void
+process_vertex_early(struct graph *g, int v)
+{
+	g->array[v]->reachable_ancestor = v;
+}
+
+void 
+process_edge(struct graph *g, int x, int y)
+{
+	enum EDGE_TYPE class;
+
+	class = edge_classifiaction(g, x, y);
+
+	if (class == TREE)
+		g->array[x]->tree_out_degree++;
+
+	if (class == BACK && g->array[x]->parent != y) {
+		if (g->array[y]->entry_time < 
+				g->array[g->array[x]->reachable_ancestor]->entry_time) {
+			g->array[x]->reachable_ancestor = y;
+		}
+	}
+}
+
+void 
+process_vertex_late(struct graph *g, int v)
+{
+	bool root;
+	unsigned long time_v;
+	unsigned long time_vparent;
+	struct node *v_node; 
+	struct node *v_parent_node;
+
+	v_node = g->array[v]; 
+    v_parent_node = g->array[v_node->parent];
+
+	if (v_node->parent < INT_MAX) {
+		if (v_node->tree_out_degree > 1)
+			printf("root articulation vertex %d\n", v);
+		return;
+	}
+	
+	root = (v_parent_node->parent < INT_MAX);
+
+	if (v_node->reachable_ancestor == v_node->parent && (! root)) {
+		printf("parent articulation vertext %d\n", v_node->parent);
+	}
+
+	if (v_node->reachable_ancestor == v) {
+		printf("Bridge articualtion vertex %d\n", v_node->parent);
+		if (v_node->tree_out_degree > 0)
+			printf("Bridge articualtion vertex %d\n", v);
+	}
+
+	time_v = g->array[v_node->reachable_ancestor]->entry_time;
+	time_vparent = 
+		g->array[v_parent_node->reachable_ancestor]->entry_time;
+	if (time_v < time_vparent) {
+		v_parent_node->reachable_ancestor = v_node->reachable_ancestor;
+	}
+}
+
 
 void
 dfs(struct graph *g, int src)
@@ -232,13 +281,14 @@ dfs(struct graph *g, int src)
 	g->time++;
 	t->exit_time = g->time;
 	t->processed = true;
+	
 }
 
 struct graph *
 build_graph(void)
 {
 	struct graph *g;
-
+    g = create_graph(11);
 	return g;
 }
 
