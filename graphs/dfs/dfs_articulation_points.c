@@ -36,6 +36,8 @@ struct graph {
 	struct node **array;
 };
 
+bool g_directed = true;
+
 void
 print_graph(struct graph *g)
 {
@@ -44,12 +46,14 @@ print_graph(struct graph *g)
 	struct node *temp;
 
 	assert(g != NULL);
+	printf("--------------------%s--------------------\n", 
+			g_directed == true? "DIRECTED" : "UNDIRECTED");
 	for (i = 0; i < g->nvertices; i++) {
 		printf("HEAD-->");
 		flag = 0;
 		for (temp = g->array[i]; temp != NULL; temp = temp->next) {
 			flag = 1;
-			printf("[id %2d dest = %2d ]<--", temp->id,
+			printf("[id %2d dest = %2d ]-->", temp->id,
 					temp->dest);
 		}
 		printf("%s\n", flag == 1 ? "TAIL" : "NULL" );
@@ -136,7 +140,6 @@ add_edge(struct graph *g, int src, int dest)
 	t->next = n;
 }
 
-
 void
 destroy_graph(struct graph *g)
 {
@@ -162,7 +165,7 @@ destroy_graph(struct graph *g)
 enum EDGE_TYPE 
 edge_classifiaction(struct graph *g, int x, int y)
 {
-	if (g->array[x]->parent == y) {
+	if (x == g->array[y]->parent) {
 		printf("EDGE (%d %d) is TREE Edge\n", x, y);
 		return TREE;
 	}
@@ -175,9 +178,9 @@ edge_classifiaction(struct graph *g, int x, int y)
 		printf("EDGE (%d %d) is FORWARD Edge\n", x, y);
    		return FORWARD;
 	}
-	if (g->array[y]->processed && (
-				g->array[y]->entry_time < g->array[x]->entry_time)) {
-		printf("EDGE (%d %d) is FORWARD Edge\n", x, y);
+	if (g->array[y]->processed && 
+			(g->array[y]->entry_time < g->array[x]->entry_time)) {
+		printf("EDGE (%d %d) is CROSS Edge\n", x, y);
 		return CROSS;
 	}
 
@@ -247,7 +250,6 @@ process_vertex_late(struct graph *g, int v)
 	}
 }
 
-
 void
 dfs(struct graph *g, int src)
 {
@@ -256,13 +258,10 @@ dfs(struct graph *g, int src)
   
 	assert(g != NULL);
 
-	if (g->finished)
-		return;
-
-	g->time++;
-	g->array[src]->discovered = true;
-	g->array[src]->entry_time = g->time;
     t = curr = g->array[src];
+	curr->discovered = true;
+	curr->entry_time = ++g->time;
+
  	process_vertex_early(g, src);
     for (curr = curr->next; curr != NULL; curr = curr->next) {
 		if (g->array[curr->dest]->discovered == false) {
@@ -270,39 +269,78 @@ dfs(struct graph *g, int src)
 			process_edge(g, src, curr->dest);
 			dfs(g, curr->dest);
 			/* ??? */
-		} else if (! g->array[curr->dest]->processed) {
+		} else if ((! g->array[curr->dest]->processed) || g_directed) {
 			process_edge(g, src, curr->dest);
 		}
-		if (g->finished)
-			return;
 	}
-	
-	process_vertex_early(g, src);
-	g->time++;
-	t->exit_time = g->time;
+	process_vertex_late(g, src);
+
+	t->exit_time = ++g->time;
 	t->processed = true;
-	
+}
+
+void print_dfs(struct graph *g)
+{
+	int i;
+
+	assert(g != NULL);
+	printf("--------------------%s--------------------\n", 
+			g_directed == true? "DIRECTED" : "UNDIRECTED");
+	printf("%10s %10s %10s %10s %10s %10s\n", 
+			"src", "parent", "discovered", "processed", 
+			"entry_time", "exit_time");
+	for (i = 0; i < g->nvertices; i++) {
+		printf("%10d %10d %10s %10s %10lu %10lu\n",
+				g->array[i]->id, g->array[i]->parent, 
+				g->array[i]->discovered == true ? "TRUE" : "FALSE",
+				g->array[i]->processed == true ? "TRUE" : "FALSE",
+				g->array[i]->entry_time, g->array[i]->exit_time);
+	}
 }
 
 struct graph *
-build_graph(void)
+build_graph(char *fname, int nvertices, int nedges)
 {
+	int i;
+	int arr[nedges][2];
+	FILE *fp;
 	struct graph *g;
-    g = create_graph(11);
+
+	if ((fp = fopen(fname, "r")) == NULL) {
+		perror("ERROR : ");
+		exit(EXIT_FAILURE);
+	}
+
+	g = create_graph(nvertices);
+
+	for (i = 0; fscanf(fp, "%d %d", &arr[i][0], &arr[i][1]) != EOF; i++) {
+		add_edge(g, arr[i][0], arr[i][1]);
+		
+		if (! g_directed)
+			add_edge(g, arr[i][1], arr[i][0]);
+	}	
+	
+	fclose(fp);
 	return g;
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
-	int i;
 	struct graph *g;
 
-	g = build_graph();
-	for (i = 0; i < g->nvertices; i++) {
-		printf("--------------------%d--------------------\n", i);
-		dfs(g, i);
-		print_graph(g);
+	if (argc != 4) {
+		fprintf(stderr, "Usage %s "
+				"<edge_list_file_path> <number_of_vertices> <number_of_edges>\n"
+				, argv[0]);
+		exit(EXIT_FAILURE);
 	}
+
+	g = build_graph(argv[1], atoi(argv[2]), atoi(argv[3]));
+
+	print_graph(g);
+	dfs(g, 0);
+	print_graph(g);
+	print_dfs(g);
 	destroy_graph(g);
 	return 0;
 }

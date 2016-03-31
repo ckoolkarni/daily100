@@ -268,7 +268,6 @@ build_graph(char *fname, int nvertices, int nedges)
 	g = create_graph(nvertices);
 
 	for (i = 0; fscanf(fp, "%d %d", &arr[i][0], &arr[i][1]) != EOF; i++) {
-		/* printf("x = %d y = %d\n", arr[i][0], arr[i][1]); */
 		add_edge(g, arr[i][0], arr[i][1]);
 		
 		if (! g_directed)
