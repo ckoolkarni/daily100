@@ -222,15 +222,15 @@ process_vertex_late(struct graph *g, int v)
 	struct node *v_parent_node;
 
 	v_node = g->array[v]; 
-    v_parent_node = g->array[v_node->parent];
 
-	if (v_node->parent < INT_MAX) {
+	if (v_node->parent == INT_MAX) {
 		if (v_node->tree_out_degree > 1)
 			printf("root articulation vertex %d\n", v);
 		return;
 	}
+	v_parent_node = g->array[v_node->parent];
 	
-	root = (v_parent_node->parent < INT_MAX);
+	root = (v_parent_node->parent == INT_MAX);
 
 	if (v_node->reachable_ancestor == v_node->parent && (! root)) {
 		printf("parent articulation vertext %d\n", v_node->parent);
