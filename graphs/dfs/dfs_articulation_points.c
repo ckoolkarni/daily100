@@ -77,7 +77,7 @@ alloc_node(int src, int dest)
 	n->entry_time = INT_MAX;
 	n->exit_time = INT_MAX;
 	n->reachable_ancestor = INT_MAX;
-	n->tree_out_degree = INT_MAX;
+	n->tree_out_degree = 0;
 	n->processed = false;
 	n->discovered = false;
 	n->edge_type = UNCLASSIFIED;
@@ -216,8 +216,8 @@ void
 process_vertex_late(struct graph *g, int v)
 {
 	bool root;
-	unsigned long time_v;
-	unsigned long time_vparent;
+	unsigned long v_reachable_ancestor_entry_time;
+	unsigned long v_parent_reachable_ancestor_entry_time;
 	struct node *v_node; 
 	struct node *v_parent_node;
 
@@ -237,15 +237,17 @@ process_vertex_late(struct graph *g, int v)
 	}
 
 	if (v_node->reachable_ancestor == v) {
-		printf("Bridge articualtion vertex %d\n", v_node->parent);
+		printf("Bridge articulation vertex %d\n", v_node->parent);
 		if (v_node->tree_out_degree > 0)
-			printf("Bridge articualtion vertex %d\n", v);
+			printf("Bridge articulation vertex %d\n", v);
 	}
 
-	time_v = g->array[v_node->reachable_ancestor]->entry_time;
-	time_vparent = 
+	v_reachable_ancestor_entry_time = 
+		g->array[v_node->reachable_ancestor]->entry_time;
+	v_parent_reachable_ancestor_entry_time = 
 		g->array[v_parent_node->reachable_ancestor]->entry_time;
-	if (time_v < time_vparent) {
+
+	if (v_reachable_ancestor_entry_time < v_parent_reachable_ancestor_entry_time) {
 		v_parent_node->reachable_ancestor = v_node->reachable_ancestor;
 	}
 }
@@ -275,8 +277,8 @@ dfs(struct graph *g, int src)
 	}
 	process_vertex_late(g, src);
 
-	t->exit_time = ++g->time;
 	t->processed = true;
+	t->exit_time = ++g->time;
 }
 
 void print_dfs(struct graph *g)
@@ -286,15 +288,16 @@ void print_dfs(struct graph *g)
 	assert(g != NULL);
 	printf("--------------------%s--------------------\n", 
 			g_directed == true? "DIRECTED" : "UNDIRECTED");
-	printf("%10s %10s %10s %10s %10s %10s\n", 
+	printf("%10s %10s %10s %10s %10s %10s %10s\n", 
 			"src", "parent", "discovered", "processed", 
-			"entry_time", "exit_time");
+			"entry_time", "exit_time", "reachable_ancestor");
 	for (i = 0; i < g->nvertices; i++) {
-		printf("%10d %10d %10s %10s %10lu %10lu\n",
+		printf("%10d %10d %10s %10s %10lu %10lu %10d\n",
 				g->array[i]->id, g->array[i]->parent, 
 				g->array[i]->discovered == true ? "TRUE" : "FALSE",
 				g->array[i]->processed == true ? "TRUE" : "FALSE",
-				g->array[i]->entry_time, g->array[i]->exit_time);
+				g->array[i]->entry_time, g->array[i]->exit_time,
+				g->array[i]->reachable_ancestor);
 	}
 }
 
@@ -314,6 +317,7 @@ build_graph(char *fname, int nvertices, int nedges)
 	g = create_graph(nvertices);
 
 	for (i = 0; fscanf(fp, "%d %d", &arr[i][0], &arr[i][1]) != EOF; i++) {
+		printf("adding edge %d %d\n", arr[i][0], arr[i][1]);
 		add_edge(g, arr[i][0], arr[i][1]);
 		
 		if (! g_directed)
