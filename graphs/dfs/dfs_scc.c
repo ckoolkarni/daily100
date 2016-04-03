@@ -104,7 +104,7 @@ create_stack(void)
 }
 
 void
-push (struct stack *s, int data)
+push(struct stack *s, int data)
 {
     struct stack_node *n;
 
@@ -151,7 +151,7 @@ is_empty(struct stack *s)
 	return s->top == NULL;
 }
 
-void 
+void
 destroy_stack(struct stack *s)
 {
 	if (s != NULL)
@@ -166,7 +166,7 @@ print_graph(struct graph *g)
 	struct node *temp;
 
 	assert(g != NULL);
-	printf("--------------------%s--------------------\n", 
+	printf("--------------------%s--------------------\n",
 			g_directed == true? "DIRECTED" : "UNDIRECTED");
 	for (i = 0; i < g->nvertices; i++) {
 		printf("HEAD-->");
@@ -196,7 +196,7 @@ alloc_node(int src, int dest)
 	n->parent = INT_MAX;
 	n->entry_time = INT_MAX;
 	n->exit_time = INT_MAX;
-	n->known_oldest_vertex = INT_MAX;
+	n->known_oldest_vertex = src;
 	n->scc = INT_MAX;
 	n->processed = false;
 	n->discovered = false;
@@ -273,9 +273,9 @@ destroy_graph(struct graph *g)
 
 	destroy_stack(g->s);
 	for (i = 0 ; i < g->nvertices; i++) {
-		for (c = g->array[i]->next; c != NULL; 
+		for (c = g->array[i]->next; c != NULL;
 						t = c, c = c->next, free_node(t))
-			; 
+			;
 		free_node(g->array[i]);
 	}
 	free(g->array);
@@ -283,7 +283,7 @@ destroy_graph(struct graph *g)
 }
 
 
-enum EDGE_TYPE 
+enum EDGE_TYPE
 edge_classifiaction(struct graph *g, int x, int y)
 {
 	if (x == g->array[y]->parent) {
@@ -294,12 +294,12 @@ edge_classifiaction(struct graph *g, int x, int y)
 		printf("EDGE (%d %d) is BACK Edge\n", x, y);
 		return BACK;
 	}
-	if (g->array[y]->processed && 
+	if (g->array[y]->processed &&
 			(g->array[y]->entry_time > g->array[x]->entry_time)) {
 		printf("EDGE (%d %d) is FORWARD Edge\n", x, y);
    		return FORWARD;
 	}
-	if (g->array[y]->processed && 
+	if (g->array[y]->processed &&
 			(g->array[y]->entry_time < g->array[x]->entry_time)) {
 		printf("EDGE (%d %d) is CROSS Edge\n", x, y);
 		return CROSS;
@@ -309,7 +309,7 @@ edge_classifiaction(struct graph *g, int x, int y)
 	return UNCLASSIFIED;
 }
 
-void 
+void
 pop_component(struct graph *g, int v)
 {
 	int t;
@@ -327,7 +327,7 @@ process_vertex_early(struct graph *g, int v)
 	push(g->s, v);
 }
 
-void 
+void
 process_edge(struct graph *g, int x, int y)
 {
 	enum EDGE_TYPE class;
@@ -351,24 +351,28 @@ process_edge(struct graph *g, int x, int y)
 	}
 }
 
-void 
+void
 process_vertex_late(struct graph *g, int v)
 {
 	struct node *v_known_oldest_vertex;
 	struct node *v_parent_known_oldest_vertex;
 
-    v_known_oldest_vertex = g->array[g->array[v]->known_oldest_vertex];
-    v_parent_known_oldest_vertex = 
-		g->array[g->array[g->array[v]->parent]->known_oldest_vertex];
-	if (g->array[v]->known_oldest_vertex = v) {
+	if (g->array[v]->known_oldest_vertex == v) {
 		pop_component(g, v);
 	}
 
-	if (v_known_oldest_vertex->entry_time < 
-			v_parent_known_oldest_vertex->entry_time) {
-		    g->array[g->array[v]->parent]->known_oldest_vertex = 
-				g->array[v]->known_oldest_vertex;
-	}
+	if (g->array[v]->parent != INT_MAX) {
+		v_known_oldest_vertex = g->array[g->array[v]->known_oldest_vertex];
+		v_parent_known_oldest_vertex =
+			g->array[g->array[g->array[v]->parent]->known_oldest_vertex];
+
+		if (v_known_oldest_vertex->entry_time <
+				v_parent_known_oldest_vertex->entry_time) {
+			    g->array[g->array[v]->parent]->known_oldest_vertex =
+					g->array[v]->known_oldest_vertex;
+		}
+	} else
+		printf("cannot update parent->knows_oldest_vertex v = %d\n", v);
 }
 
 void
@@ -376,7 +380,7 @@ dfs(struct graph *g, int src)
 {
 	struct node *t;
 	struct node *curr;
-  
+
 	assert(g != NULL);
 
     t = curr = g->array[src];
@@ -405,17 +409,18 @@ void print_dfs(struct graph *g)
 	int i;
 
 	assert(g != NULL);
-	printf("--------------------%s--------------------\n", 
+	printf("--------------------%s--------------------\n",
 			g_directed == true? "DIRECTED" : "UNDIRECTED");
-	printf("%10s %10s %10s %10s %10s %10s\n", 
-			"src", "parent", "discovered", "processed", 
-			"entry_time", "exit_time");
+	printf("%10s %10s %10s %10s %10s %10s %10s\n",
+			"src", "parent", "discovered", "processed",
+			"entry_time", "exit_time", "SCC");
 	for (i = 0; i < g->nvertices; i++) {
-		printf("%10d %10d %10s %10s %10lu %10lu\n",
-				g->array[i]->id, g->array[i]->parent, 
+		printf("%10d %10d %10s %10s %10lu %10lu %10d\n",
+				g->array[i]->id, g->array[i]->parent,
 				g->array[i]->discovered == true ? "TRUE" : "FALSE",
 				g->array[i]->processed == true ? "TRUE" : "FALSE",
-				g->array[i]->entry_time, g->array[i]->exit_time);
+				g->array[i]->entry_time, g->array[i]->exit_time,
+				g->array[i]->scc);
 	}
 }
 
@@ -470,7 +475,9 @@ int main(int argc, char *argv[])
 
 	g = build_graph(argv[1], atoi(argv[2]), atoi(argv[3]));
 
+    print_dfs(g);
 	strongly_connencted_comp(g);
+    print_dfs(g);
 
 	destroy_graph(g);
 	return 0;

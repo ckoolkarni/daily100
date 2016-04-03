@@ -46,7 +46,7 @@ print_graph(struct graph *g)
 	struct node *temp;
 
 	assert(g != NULL);
-	printf("--------------------%s--------------------\n", 
+	printf("--------------------%s--------------------\n",
 			g_directed == true? "DIRECTED" : "UNDIRECTED");
 	for (i = 0; i < g->nvertices; i++) {
 		printf("HEAD-->");
@@ -151,8 +151,8 @@ destroy_graph(struct graph *g)
 
 	for (i = 0 ; i < g->nvertices; i++) {
 
-		for (c = g->array[i]->next; c != NULL; 
-						t = c, c = c->next, free_node(t)); 
+		for (c = g->array[i]->next; c != NULL;
+						t = c, c = c->next, free_node(t));
 
 		free_node(g->array[i]);
 	}
@@ -162,7 +162,27 @@ destroy_graph(struct graph *g)
 	free(g);
 }
 
-enum EDGE_TYPE 
+void print_dfs(struct graph *g)
+{
+	int i;
+
+	assert(g != NULL);
+	printf("--------------------%s--------------------\n",
+			g_directed == true? "DIRECTED" : "UNDIRECTED");
+	printf("%10s %10s %10s %10s %10s %10s %10s\n",
+			"src", "parent", "discovered", "processed",
+			"entry_time", "exit_time", "reachable_ancestor");
+	for (i = 0; i < g->nvertices; i++) {
+		printf("%10d %10d %10s %10s %10lu %10lu %10d\n",
+				g->array[i]->id, g->array[i]->parent,
+				g->array[i]->discovered == true ? "TRUE" : "FALSE",
+				g->array[i]->processed == true ? "TRUE" : "FALSE",
+				g->array[i]->entry_time, g->array[i]->exit_time,
+				g->array[i]->reachable_ancestor);
+	}
+}
+
+enum EDGE_TYPE
 edge_classifiaction(struct graph *g, int x, int y)
 {
 	if (x == g->array[y]->parent) {
@@ -178,7 +198,7 @@ edge_classifiaction(struct graph *g, int x, int y)
 		printf("EDGE (%d %d) is FORWARD Edge\n", x, y);
    		return FORWARD;
 	}
-	if (g->array[y]->processed && 
+	if (g->array[y]->processed &&
 			(g->array[y]->entry_time < g->array[x]->entry_time)) {
 		printf("EDGE (%d %d) is CROSS Edge\n", x, y);
 		return CROSS;
@@ -192,9 +212,11 @@ void
 process_vertex_early(struct graph *g, int v)
 {
 	g->array[v]->reachable_ancestor = v;
+	printf("%s\t\t\t", __func__);
+	print_dfs(g);
 }
 
-void 
+void
 process_edge(struct graph *g, int x, int y)
 {
 	enum EDGE_TYPE class;
@@ -205,23 +227,25 @@ process_edge(struct graph *g, int x, int y)
 		g->array[x]->tree_out_degree++;
 
 	if (class == BACK && g->array[x]->parent != y) {
-		if (g->array[y]->entry_time < 
+		if (g->array[y]->entry_time <
 				g->array[g->array[x]->reachable_ancestor]->entry_time) {
 			g->array[x]->reachable_ancestor = y;
 		}
 	}
+	printf("%s\t\t\t", __func__);
+	print_dfs(g);
 }
 
-void 
+void
 process_vertex_late(struct graph *g, int v)
 {
 	bool root;
 	unsigned long v_reachable_ancestor_entry_time;
 	unsigned long v_parent_reachable_ancestor_entry_time;
-	struct node *v_node; 
+	struct node *v_node;
 	struct node *v_parent_node;
 
-	v_node = g->array[v]; 
+	v_node = g->array[v];
 
 	if (v_node->parent == INT_MAX) {
 		if (v_node->tree_out_degree > 1)
@@ -242,14 +266,18 @@ process_vertex_late(struct graph *g, int v)
 			printf("Bridge articulation vertex %d\n", v);
 	}
 
-	v_reachable_ancestor_entry_time = 
+	v_reachable_ancestor_entry_time =
 		g->array[v_node->reachable_ancestor]->entry_time;
-	v_parent_reachable_ancestor_entry_time = 
+
+	v_parent_reachable_ancestor_entry_time =
 		g->array[v_parent_node->reachable_ancestor]->entry_time;
 
-	if (v_reachable_ancestor_entry_time < v_parent_reachable_ancestor_entry_time) {
+	if (v_reachable_ancestor_entry_time <
+								v_parent_reachable_ancestor_entry_time)	{
 		v_parent_node->reachable_ancestor = v_node->reachable_ancestor;
 	}
+	printf("%s\t\t\t", __func__);
+	print_dfs(g);
 }
 
 void
@@ -257,7 +285,7 @@ dfs(struct graph *g, int src)
 {
 	struct node *t;
 	struct node *curr;
-  
+ 
 	assert(g != NULL);
 
     t = curr = g->array[src];
@@ -279,26 +307,6 @@ dfs(struct graph *g, int src)
 
 	t->processed = true;
 	t->exit_time = ++g->time;
-}
-
-void print_dfs(struct graph *g)
-{
-	int i;
-
-	assert(g != NULL);
-	printf("--------------------%s--------------------\n", 
-			g_directed == true? "DIRECTED" : "UNDIRECTED");
-	printf("%10s %10s %10s %10s %10s %10s %10s\n", 
-			"src", "parent", "discovered", "processed", 
-			"entry_time", "exit_time", "reachable_ancestor");
-	for (i = 0; i < g->nvertices; i++) {
-		printf("%10d %10d %10s %10s %10lu %10lu %10d\n",
-				g->array[i]->id, g->array[i]->parent, 
-				g->array[i]->discovered == true ? "TRUE" : "FALSE",
-				g->array[i]->processed == true ? "TRUE" : "FALSE",
-				g->array[i]->entry_time, g->array[i]->exit_time,
-				g->array[i]->reachable_ancestor);
-	}
 }
 
 struct graph *
@@ -342,9 +350,8 @@ int main(int argc, char *argv[])
 	g = build_graph(argv[1], atoi(argv[2]), atoi(argv[3]));
 
 	print_graph(g);
-	dfs(g, 0);
-	print_graph(g);
 	print_dfs(g);
+	dfs(g, 0);
 	destroy_graph(g);
 	return 0;
 }
