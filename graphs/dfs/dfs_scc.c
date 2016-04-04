@@ -180,6 +180,26 @@ print_graph(struct graph *g)
 	}
 }
 
+void print_dfs(struct graph *g)
+{
+	int i;
+
+	assert(g != NULL);
+	printf("--------------------%s--------------------\n",
+			g_directed == true? "DIRECTED" : "UNDIRECTED");
+	printf("%10s %10s %10s %10s %10s %10s %10s %10s\n",
+			"src", "parent", "discovered", "processed",
+			"entry_time", "exit_time", "SCC", "known_olde");
+	for (i = 0; i < g->nvertices; i++) {
+		printf("%10d %10d %10s %10s %10lu %10lu %10d %10d\n",
+				g->array[i]->id, g->array[i]->parent,
+				g->array[i]->discovered == true ? "TRUE" : "FALSE",
+				g->array[i]->processed == true ? "TRUE" : "FALSE",
+				g->array[i]->entry_time, g->array[i]->exit_time,
+				g->array[i]->scc, g->array[i]->known_oldest_vertex);
+	}
+}
+
 struct node *
 alloc_node(int src, int dest)
 {
@@ -316,6 +336,7 @@ pop_component(struct graph *g, int v)
 
 	g->component_found++;
 	g->array[v]->scc = g->component_found;
+	print_stack(g->s);
 	while ((t = pop(g->s)) != v) {
 		g->array[t]->scc = g->component_found;
 	}
@@ -337,18 +358,30 @@ process_edge(struct graph *g, int x, int y)
 
 	class = edge_classifiaction(g, x, y);
 
-	if (class == BACK) {
-		if (g->array[y]->entry_time < x_known_oldest_vertex->entry_time)
-			g->array[x]->known_oldest_vertex = y;
-	}
+	/* Update update source's last know vertex ini case of cycle found */
+	switch (class) {
 
-	if (class == CROSS) {
-		if (g->array[y]->scc == INT_MAX) {
-			if (g->array[y]->entry_time	< x_known_oldest_vertex->entry_time) {
+		case BACK :
+			/* BACK edge represents in the graph */
+			if (g->array[y]->entry_time < x_known_oldest_vertex->entry_time)
 				g->array[x]->known_oldest_vertex = y;
+			break;
+
+		case CROSS :
+			if (g->array[y]->scc == INT_MAX) {
+				if (g->array[y]->entry_time	< 
+						x_known_oldest_vertex->entry_time) {
+					g->array[x]->known_oldest_vertex = y;
+				}
 			}
-		}
+			break;
+		case TREE:
+		case FORWARD:
+			break;
+		case UNCLASSIFIED:
+			fprintf(stderr, "Invalid Edge\n");
 	}
+	printf("%s(%d, %d):\n", __func__, x, y); print_dfs(g);
 }
 
 void
@@ -372,7 +405,9 @@ process_vertex_late(struct graph *g, int v)
 					g->array[v]->known_oldest_vertex;
 		}
 	} else
-		printf("cannot update parent->knows_oldest_vertex v = %d\n", v);
+		printf("cannot update parent->known_oldest_vertex v = %d\n", v);
+
+	printf("-- :%s(%d):\n", __func__, v); print_dfs(g);
 }
 
 void
@@ -402,26 +437,6 @@ dfs(struct graph *g, int src)
 
 	t->exit_time = ++g->time;
 	t->processed = true;
-}
-
-void print_dfs(struct graph *g)
-{
-	int i;
-
-	assert(g != NULL);
-	printf("--------------------%s--------------------\n",
-			g_directed == true? "DIRECTED" : "UNDIRECTED");
-	printf("%10s %10s %10s %10s %10s %10s %10s\n",
-			"src", "parent", "discovered", "processed",
-			"entry_time", "exit_time", "SCC");
-	for (i = 0; i < g->nvertices; i++) {
-		printf("%10d %10d %10s %10s %10lu %10lu %10d\n",
-				g->array[i]->id, g->array[i]->parent,
-				g->array[i]->discovered == true ? "TRUE" : "FALSE",
-				g->array[i]->processed == true ? "TRUE" : "FALSE",
-				g->array[i]->entry_time, g->array[i]->exit_time,
-				g->array[i]->scc);
-	}
 }
 
 struct graph *
