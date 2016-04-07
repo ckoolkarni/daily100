@@ -4,16 +4,15 @@
 #include <limits.h>
 #include <assert.h>
 
-#define N 100
-
 struct heap_node {
-	int data;
+	int v;
 	int key;
 };
 
 struct heap {
 	int size;
 	int cap;
+	int *pos;
 	struct heap_node **array;
 };
 
@@ -29,14 +28,14 @@ alloc(size_t size)
 }
 
 struct heap_node *
-alloc_heap_node(int key, int data) 
+alloc_heap_node(int v, int key) 
 {
 	struct heap_node *n;
 
 	n = (struct heap_node *) alloc(sizeof(struct heap_node));
 
+	n->v = v;
 	n->key = key;
-	n->data = data;
 
 	return n;
 }
@@ -57,10 +56,12 @@ create_min_heap(int cap)
 	h = (struct heap *) alloc(sizeof(struct heap));
 	h->size = 0;
     h->cap = cap;
+	h->pos = (int *) alloc(cap * sizeof(int));
 	h->array = (struct heap_node**) alloc(cap * sizeof(*(h->array)));
 
 	for (i = 0; i < cap; i++) {
 		h->array[i] = NULL;
+		h->pos[i] = i;
 	}
 	return h;
 }
@@ -94,7 +95,7 @@ is_empty(struct heap *h)
 int
 parent(int i)
 {
-	return ceil((i / 2.0) - 1);
+	return ceil((i - 1) / 2.0);
 }
 
 void
@@ -102,11 +103,15 @@ print_queue(struct heap *h)
 {
 	int i;
 
-	printf("------------------------------\n");	
-	for (i = 0; i < h->size; i++) {
-		printf("[%d] = %d ", i, h->array[i]->key);
+	printf("--------------POS---------------\n");	
+	for (i = 0; i < h->cap; i++) {
+		printf("|pos [%d] = %d", i, h->pos[i]);
 	}
-	printf("------------------------------\n");	
+	printf("\n--------------ARR----------------\n");	
+	for (i = 0; i < h->size; i++) {
+		printf("|v %d = key %d", h->array[i]->v, h->array[i]->key);
+	}
+	printf("\n------------------------------\n");	
 }
 
 void
@@ -120,13 +125,17 @@ min_heapify(struct heap *h, int i)
 	r = 2 * i + 2;
 	smallest = i;
 
-	if (l < h->size && h->array[l]->key < h->array[i]->key)
+	if (l < h->size && h->array[l]->key < h->array[smallest]->key)
 		smallest = l;
 
 	if (r < h->size && h->array[r]->key < h->array[smallest]->key)
 		smallest = r;
 
 	if (smallest != i) {
+
+		h->pos[h->array[smallest]->v] = i;
+		h->pos[h->array[i]->v] = smallest;
+
 		swap_heap_node(&h->array[smallest], &h->array[i]);
 		/* after swap smallest is pointing to the i */
 		min_heapify(h, smallest);
@@ -134,21 +143,44 @@ min_heapify(struct heap *h, int i)
 }
 
 void
-decrease_key(struct heap *h, int i, struct heap_node *n)
+decrease_key(struct heap *h, int v, struct heap_node *n)
 {
-	if (h->array[i] != NULL && n->key > h->array[i]->key) {
-		fprintf(stderr, "Error\n");
-		exit(EXIT_FAILURE);
-	}
+	int i;
 
-	h->array[i] = n;
+	h->array[v] = n;
+	i = h->pos[v];
 
-	while (i > 0 && h->array[parent(i)]->key > h->array[i]->key) {
+	while (i > 0 && h->array[i]->key < h->array[parent(i)]->key) {
+		h->pos[h->array[i]->v] = parent(i);
+		h->pos[h->array[parent(i)]->v] = i;
+
 		swap_heap_node(&h->array[i], &h->array[parent(i)]);
 		i = parent(i);
 	}
 
 	print_queue(h);
+}
+
+struct heap_node *
+extract_min(struct heap *h)
+{
+	struct heap_node *root;
+
+	if (is_empty(h)) {
+		fprintf(stderr, "ERROR : Heap Underflow\n");
+		exit(EXIT_FAILURE);
+	}
+
+	root = h->array[0];
+	h->array[0] = h->array[h->size - 1];
+
+	h->pos[root->v] = h->size - 1;
+	h->pos[h->size - 1] = 0;
+
+	h->size--;
+	min_heapify(h, 0);
+
+	return root;
 }
 
 int
@@ -157,14 +189,14 @@ search_index(struct heap *h, struct heap_node *n)
 	int i;
 
 	for (i = 0; i < h->size; i++) {
-		if (h->array[i]->data == n->data)
+		if (h->array[i]->v == n->v)
 			return i;
 	}
 	return h->size;
 }
 
 void
-insert(struct heap *h, int key, int data)
+insert(struct heap *h, int v, int key)
 {
     struct heap_node *n;
 
@@ -174,36 +206,19 @@ insert(struct heap *h, int key, int data)
 		exit(EXIT_FAILURE);
 	}
 
-	n = (struct heap_node *) alloc_heap_node(key, data);
+	n = (struct heap_node *) alloc_heap_node(v, key);
 	decrease_key(h, h->size - 1, n);
 }
 
-struct heap_node *
-extract_min(struct heap *h)
-{
-	struct heap_node *min;
-
-	if (h->size <= 0) {
-		fprintf(stderr, "ERROR : Heap Underflow\n");
-		exit(EXIT_FAILURE);
-	}
-
-	min = h->array[0];
-	h->array[0] = h->array[h->size - 1];
-	h->size--;
-	min_heapify(h, 0);
-
-	return min;
-}
 
 void print_priority_queue(struct heap *h)
 {
 	struct heap_node *n;
 
-	printf("%10s %10s\n", "KEY", "DATA");
+	printf("%10s %10s\n", "V", "KEY");
 	while (h->size) {
 		n = extract_min(h);
-		printf("%10d %10d\n", n->key, n->data);
+		printf("%10d %10d\n", n->v, n->key);
 		free_heap_node(n);
 	}
 }
@@ -223,7 +238,7 @@ build_priority_queue(char *fname, int heap_cap)
 
 	h = create_min_heap(heap_cap);
 
-	printf("%6s %10s %10s\n", "Adding", "KEY", "DATA");
+	printf("%6s %10s %10s\n", "Adding", "V", "KEY");
 	for (i = 0; fscanf(fp, "%d %d", &arr[i][0], &arr[i][1]) != EOF; i++) {
 		printf("%6s %10d %10d\n", "Adding", arr[i][0], arr[i][1]);
 		insert(h, arr[i][0], arr[i][1]);

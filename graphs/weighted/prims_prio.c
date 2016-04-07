@@ -51,7 +51,7 @@ print_mst(struct graph *g)
 	printf("%10s %10s %10s | %10s %10s %10s\n", 
 								"V", "PARENT[]", "KEY[]", "V", "KEY", "POS");
 	for (i = 0; i < h->cap; i++) {
-		if (flag == 0 && i >= h->size) {
+		if (heap_size_flag == 0 && i >= h->size) {
 			printf("______________________________________________________"
 														"________________\n");
 			heap_size_flag = 1;
@@ -76,7 +76,10 @@ print_graph(struct graph *g)
 		flag = 0;
 		for (temp = g->array[i]; temp != NULL; temp = temp->next) {
 			flag = 1;
-			printf("[id %2d dest = %2d wt = %2d ]-->", temp->v,
+			/*printf("[id %2d dest = %2d wt = %2d ]-->", temp->v,
+					temp->dest, temp->weight);*/
+
+			printf("[%2d %2d %2d]-->", temp->v,
 					temp->dest, temp->weight);
 		}
 		printf("%s\n", flag == 1 ? "TAIL" : "NULL" );
@@ -154,6 +157,12 @@ add_edge(struct graph *g, int src, int dest, int weight)
 	t = g->array[src];
 
 	while (t->next != NULL) {
+		if (n->v == t->v && n->dest == t->dest && n->weight == t->weight) {
+			fprintf(stderr, "ERROR : "
+					"duplicate edge src %d dest %d weight %d\n",
+					n->v, n->dest, n->weight);
+//			exit(EXIT_FAILURE);
+		}
 		t = t->next;
 	}
 	
@@ -361,10 +370,11 @@ struct graph *
 build_graph(char *fname, int nvertices, int nedges)
 {
 	int i;
-	int arr[nedges][3];
+	int src;
+	int dest;
+	int weight;
 	FILE *fp;
 	struct graph *g;
-
 
 	if ((fp = fopen(fname, "r")) == NULL) {
 		perror("ERROR : ");
@@ -372,15 +382,15 @@ build_graph(char *fname, int nvertices, int nedges)
 	}
 
 	g = create_graph(nvertices);
-	printf("%6s %10s %10s\n", "Adding", "KEY", "V");
-	for (i = 0; fscanf(fp, "%d %d %d", 
-							&arr[i][0], &arr[i][1], &arr[i][2]) != EOF; i++) {
-		add_edge(g, arr[i][0], arr[i][1], arr[i][2]);
-		
+    for (i = 0; fscanf(fp, "%d %d %d", 
+							&src, &dest, &weight) != EOF; i++) {
+		printf("%10s %10s %10s\n", "SRC", "DEST", "WEIGHT");
+		printf("%10d %10d %10d\n", src, dest, weight);
+		add_edge(g, src, dest, weight);
 		if (! g->directed)
-			add_edge(g, arr[i][1], arr[i][0], arr[i][2]);
-	}	
+			add_edge(g, dest, src, weight);
 	
+	}
 	fclose(fp);
 	return g;
 }
