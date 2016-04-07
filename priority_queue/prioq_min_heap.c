@@ -81,7 +81,7 @@ swap_heap_node(struct heap_node **a, struct heap_node **b)
 	int tpos;
 	struct heap_node *t;
 
-   /* tpos = (*a)->pos, (*a)->pos = (*b)->pos, (*b)->pos = tpos;*/
+    tpos = (*a)->pos, (*a)->pos = (*b)->pos, (*b)->pos = tpos;
 	t = *a, *a = *b, *b = t;
 }
 
@@ -206,10 +206,10 @@ void print_priority_queue(struct heap *h)
 {
 	struct heap_node *n;
 
-	printf("%10s %10s\n", "KEY", "DATA");
+	printf("%10s %10s %10s\n", "KEY", "DATA", "POS");
 	while (h->size) {
 		n = extract_min(h);
-		printf("%10d %10d\n", n->key, n->data);
+		printf("%10d %10d %10d\n", n->key, n->data, n->pos);
 		free_heap_node(n);
 	}
 }
