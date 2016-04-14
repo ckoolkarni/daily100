@@ -6,7 +6,7 @@
 #include <math.h>
  
 struct set_node {
-	int data;
+	int id;
 	int rank;
 	struct set_node *parent;
 };
@@ -15,12 +15,12 @@ struct edge_node {
 	int src;
 	int dest;
 	int weight;
-	int parent;
 };
 
 struct graph {
 	int curr;
 	int nedges;
+	int nvertices;
 	struct edge_node **array;
 };
 
@@ -29,11 +29,11 @@ print_mst(struct graph *g)
 {
 	int i;
 
-	printf("\n%10s %10s %10s %10s %10s\n", 
-			"ADDR", "SRC", "DEST", "WEIGHT", "PARENT");
+	printf("\n%10s %10s %10s %10s\n", 
+			"ADDR", "SRC", "DEST", "WEIGHT");
 	for (i = 0 ; i < g->nedges; i++) {
-		printf("%10p %10d %10d %10d %10d\n", g->array[i], g->array[i]->src, 
-				g->array[i]->dest, g->array[i]->weight, g->array[i]->parent);
+		printf("%10p %10d %10d %10d\n", g->array[i], g->array[i]->src, 
+				g->array[i]->dest, g->array[i]->weight);
 	}
 }
 
@@ -60,7 +60,6 @@ alloc_edge_node(int src, int dest, int weight)
 	n->src = src;
 	n->dest = dest;
 	n->weight = weight;
-	n->parent = INT_MAX;
 
 	return n;
 }
@@ -73,7 +72,7 @@ free_mem(void *p)
 }
 
 struct graph *
-create_graph(int nedges)
+create_graph(int nvertices, int nedges)
 {
 	int i;
 	struct graph *g;
@@ -86,6 +85,7 @@ create_graph(int nedges)
     printf("array %10p\n", g->array);
 	g->curr = 0;
     g->nedges = nedges;
+    g->nvertices = nvertices;
 	for (i = 0; i < nedges; i++) {
 		g->array[i] = alloc_edge_node(i, INT_MAX, INT_MAX);
 		printf("array[%d] %10p\n", i, g->array[i]);
@@ -119,12 +119,12 @@ destroy_graph(struct graph *g)
 }
 
 struct set_node *
-alloc_set_node(int data)
+alloc_set_node(int id)
 {
 	struct set_node *n;
 
 	n = (struct set_node *) alloc_mem(sizeof(struct set_node));
-	n->data = data;
+	n->id = id;
 	n->rank = 0;
 	n->parent = NULL;
 	return n;
@@ -139,8 +139,8 @@ print_set(struct set_node **set, int n)
 			"ADDRESS", "DATA", "rank", "PARENT");
 	for (i = 0; i < n; i++) {
 		printf("%16p %10d %10d %10d\n", 
-				set[i], set[i]->data, set[i]->rank, 
-				set[i]->parent == NULL ? -1 : set[i]->parent->data);
+				set[i], set[i]->id, set[i]->rank, 
+				set[i]->parent == NULL ? -1 : set[i]->parent->id);
 	}
 }
 
@@ -160,20 +160,21 @@ init_set(int n)
 	return set;
 }
 
-struct set_node * 
-find_set(struct set_node **set, struct set_node *n)
+int 
+find_set(struct set_node **set, int n)
 {
-	struct set_node *root;
+	int root;
 
 	assert(set != NULL);
 
-	if (n->parent == NULL) {
-		return n;
+	if (set[n]->parent == NULL) {
+		return set[n]->id;
 	}
-	root = find_set(set, n->parent);
-	if (root->parent == NULL && n->parent != root) {
-		n->parent = root;
-	}
+	root = find_set(set, set[n]->parent->id);
+/*	Path Compression optimization
+	if (set[root]->parent == NULL && set[n]->parent != root) {
+		set[n]->parent = root;
+	}*/
 	return root;
 }
 
@@ -185,8 +186,8 @@ make_union(struct set_node **set, int a, int b)
 
 	assert(set != NULL);
 
-    aroot = find_set(set, set[a]);
-    broot = find_set(set, set[b]);
+    aroot = set[find_set(set, a)];
+    broot = set[find_set(set, b)];
 
 	if (aroot->rank < broot->rank) {
 		aroot->parent = broot;	
@@ -217,6 +218,8 @@ weight_compare(const void *a, const void *b)
 	struct edge_node **aedge;
 	struct edge_node **bedge;
 
+	assert(a != NULL && b!= NULL);
+
 	aedge = (struct edge_node **) a;
 	bedge = (struct edge_node **) b;
 
@@ -231,33 +234,54 @@ weight_compare(const void *a, const void *b)
 void
 kruskal(struct graph *g)
 {
-	struct set_node *s;
+	int i;
+	int src_root;
+	int dest_root;
+	int result_count;
+	struct set_node **set;
+	struct edge_node *curr_edge;
+	struct edge_node **result;
 	
-	s = init_set(g->curr);
-	
+	set = init_set(g->nvertices);
+
+	result = (struct edge_node **) malloc(g->curr * sizeof (struct edge_node*));
+    result_count = 0;
+	for (i = 0; i < g->nedges; i++) {
+        curr_edge = g->array[i];
+        assert(curr_edge != NULL);
+		printf("Now Processing EDGE SRC %d DEST %d\n", curr_edge->src, curr_edge->dest);
+		src_root = find_set(set, curr_edge->src);
+		dest_root = find_set(set, curr_edge->dest);
+
+		if (src_root != dest_root) {
+			result[result_count++] = curr_edge;	
+			make_union(set, curr_edge->src, curr_edge->dest);
+		}
+	}
+
+    printf("%10s %10s\n", "SRC", "DEST");
+	for (i = 0 ; i < result_count; i++) {
+		printf("%10d %10d\n", result[i]->src, result[i]->dest);
+	}
+	free(result);
 }
 
 int main(int argc, char *argv[])
 {
 	int edges;
+	int vertices;
 	struct graph *g;
 
-	edges = 15;
-	g = create_graph(edges);
-/*	add_edge(g, 0, 1, 10);
-	add_edge(g, 0, 2, 9);
-	add_edge(g, 2, 1, 8);
-	add_edge(g, 1, 3, 7);
-	add_edge(g, 3, 4, 6);
-	add_edge(g, 2, 4, 5);
-*/
 #if 1
-	add_edge(g, 0, 7, 4);
+	edges = 14;
+	vertices = 9;
+	g = create_graph(vertices, edges);
+
+	add_edge(g, 0, 1, 4);
 	add_edge(g, 0, 7, 8);
 	add_edge(g, 1, 2, 8);
 	add_edge(g, 1, 7, 11);
 	add_edge(g, 2, 3, 7);
-	add_edge(g, 2, 5, 4);
 	add_edge(g, 2, 8, 2);
 	add_edge(g, 3, 4, 9);
 	add_edge(g, 3, 5, 14);
@@ -277,36 +301,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
