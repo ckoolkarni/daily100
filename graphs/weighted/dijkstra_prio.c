@@ -401,7 +401,7 @@ dijkstra(struct graph *g, int src)
 	int u;
 	int v;
 	struct heap *h;
-	struct node *curr;
+	struct node *curr_edge;
 	struct heap_node *min;
 
 	print_graph(g);
@@ -413,17 +413,18 @@ dijkstra(struct graph *g, int src)
 	while (! pq_is_empty(h)) {
 		min = pq_extract_min(g->h);
 		u = min->v;
-        for (curr = g->array[u]->next; curr != NULL; curr = curr->next) {
-			v = curr->dest;
-			if (pq_is_in_heap(h, v) && curr->key != INT_MAX 
-						&& curr->weight + g->array[u]->key < g->array[v]->key) {
-				g->array[v]->key = curr->weight + g->array[u]->key;
+        for (curr_edge = g->array[u]->next;
+				curr_edge != NULL; curr_edge = curr_edge->next) {
+			v = curr_edge->dest;
+			if (pq_is_in_heap(h, v) && g->array[u]->key != INT_MAX && 
+				curr_edge->weight + g->array[u]->key < g->array[v]->key) {
+				g->array[v]->key = curr_edge->weight + g->array[u]->key;
 				pq_decrease_key(h, v, g->array[v]->key);
 			} 
 		}
 	}
 
-	for (i = 1; i < g->nvertices; i++)
+	for (i = 0; i < g->nvertices; i++)
 		printf("%d - %d\n", i, g->array[i]->key);
 	
 }
