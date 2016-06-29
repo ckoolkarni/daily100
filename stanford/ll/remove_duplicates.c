@@ -188,8 +188,8 @@ test_case_3(void)
 
 int main(int argc, char * argv[]) 
 {
-	//test_case_1();
-    //test_case_2();
+	test_case_1();
+    test_case_2();
     test_case_3();
 	return 0;
 }
