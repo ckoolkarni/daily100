@@ -9,6 +9,16 @@ struct node {
 	struct node *next;
 };
 
+void
+print_ll(struct node *sl)
+{
+	while (sl) {
+		printf("%d ", sl->data);
+		sl = sl->next;
+	}
+	puts("X");
+}
+
 struct node *
 get_node(int data)
 {
@@ -66,6 +76,9 @@ sorted_insert(struct node **sl, struct node *n)
 {
 	int i;
 	struct node *t;
+
+	print_ll(*sl);
+	fprintf(stderr, "inserting %d\n", n->data);
 	
 	if (*sl == NULL) {
 		*sl = n;
@@ -90,6 +103,7 @@ sorted_insert(struct node **sl, struct node *n)
 			   if (t->data <= n->data && t->next->data >= n->data) {
 				   n->next = t->next;
 				   t->next = n;
+				   return;
 			   }
 		   }
 		   if (t->next == NULL)
@@ -98,15 +112,6 @@ sorted_insert(struct node **sl, struct node *n)
 	}
 }
 
-void
-print_ll(struct node *sl)
-{
-	while (sl) {
-		printf("%d ", sl->data);
-		sl = sl->next;
-	}
-	puts("X");
-}
 
 /* Empty Linked List */
 void
@@ -154,6 +159,14 @@ test_case_2(void)
 
 	delete(&sl);
 
+ 	n = get_node(50); sorted_insert(&sl, n);
+	n = get_node(30); sorted_insert(&sl, n);
+	n = get_node(20); sorted_insert(&sl, n);
+	n = get_node(40); sorted_insert(&sl, n);
+	n = get_node(10); sorted_insert(&sl, n);
+	print_ll(sl);
+
+	delete(&sl);
 }
 
 /* Multiple Nodes */
@@ -221,8 +234,8 @@ test_case_3(void)
 int main(int argc, char * argv[]) 
 {
 
-	//test_case_1();
-	//test_case_2();
+	test_case_1();
+	test_case_2();
 	test_case_3();
 	return 0;
 }
