@@ -215,9 +215,6 @@ test_case_3(void)
 	n = get_node(5); sorted_insert(&sl, n);
 	print_ll(sl);
 	delete(&sl);
-
-
-
 }
 
 
