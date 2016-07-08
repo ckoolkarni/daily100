@@ -75,47 +75,40 @@ struct node *
 sorted_intersect(struct node *a, struct node *b)
 {
 	int n;
-	struct node *t;
 	struct node *newlist;
 
-	t = NULL;
 	newlist = NULL;
 	if (a == NULL && b == NULL)
 		return;
 
 	if (a != NULL && b == NULL)
-		t = a;
-	else if (a == NULL && b != NULL)
-		t = b;
+		return NULL;
 
-	if (t) {
-		while (t != NULL) {
-			append(&newlist, t->data);
-			t = t->next;
-		}
-	} else {
-		while (a != NULL && b != NULL) {
-			if (a->data == b->data) {
-				n = a->data;
-				append(&newlist, n);
+	if (a == NULL && b != NULL)
+		return NULL;
+
+	while (a != NULL && b != NULL) {
+		if (a->data == b->data) {
+			n = a->data;
+			append(&newlist, n);
+			a = a->next;
+			while (a && a->data == n) {
 				a = a->next;
-				while (a && a->data == n) {
-					a = a->next;
-				}
-				if (a) {
-					b = b->next;
-					while (b && b->data == n) {
-						b = b->next;
-					}
-				}
-			} else {
-				if (a->data > b->data)
-					b = b->next;
-				else 
-					a = a->next;
 			}
+			if (a) {
+				b = b->next;
+				while (b && b->data == n) {
+					b = b->next;
+				}
+			}
+		} else {
+			if (a->data > b->data)
+				b = b->next;
+			else 
+				a = a->next;
 		}
 	}
+
 	return newlist;
 }
 
@@ -394,8 +387,8 @@ test_case_3(void)
 
 int main(int argc, char * argv[]) 
 {
-	test_case_1();
+//	test_case_1();
 	test_case_2();
-	test_case_3();
+//	test_case_3();
 	return 0;
 }
