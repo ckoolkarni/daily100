@@ -27,7 +27,7 @@ bst_print(const struct bst_node *node)
     if (node == NULL)
         return;
 
-    fprintf(stderr, "%p %d\n", node->bst_data, *(int *)node->bst_data);
+    fprintf(stderr, "%d", *(int *)node->bst_data);
     if (node->bst_link[0] != NULL || node->bst_link[1] != NULL) {
         fprintf(stderr, "(");
         bst_print(node->bst_link[0]);
@@ -40,17 +40,16 @@ bst_print(const struct bst_node *node)
 }
 
 struct bst_node *
-get_node(void *data)
+get_node(void *bst_data)
 {
     struct bst_node *n;
 
-    if ((n = (struct bst_node *) malloc(sizeof(struct bst_node *))) == NULL) {
+    if ((n = (struct bst_node *) malloc(sizeof(struct bst_node))) == NULL) {
         fprintf(stderr, "ERROR : malloc : %s\n", strerror(errno));
         return 0;
     }
-    n->bst_data =  data;
+    n->bst_data = bst_data;
     n->bst_link[0] = n->bst_link[1] = NULL;
-    fprintf(stderr, "%s %p %d data %p\n", __func__, n->bst_data, *(int *) n->bst_data, data);
     return n;
 }
 
@@ -98,15 +97,56 @@ bst_insert(struct bst_table *t, void *item)
 
     if (q == NULL) {
         t->bst_root = n;
-        //fprintf(stderr, "%s t->root->bst_data %p\n", __func__, t->bst_root->bst_data);
     } else {
         q->bst_link[dir] = n;
-        fprintf(stderr, "%s n->bst_data %p item %p\n", __func__, n->bst_data, item);
-        fprintf(stderr, "%s q->bst_link[%d]-> bst_data %p\n", __func__, dir,
-                q->bst_link[dir]->bst_data);
     }
     t->bst_count++;
 }
+
+void
+bst_delete(struct bst_table *t)
+{
+	struct bst_node *p;
+	struct bst_node *q;
+
+	if (t == NULL || t->bst_root == NULL)
+		return;
+
+	for (p = t->bst_root; p != NULL; p = q) {
+		if (p->bst_link[0] != NULL) {
+			q = p->bst_link[0];
+			p->bst_link[0] = q->bst_link[1];
+			q->bst_link[1] = p;
+		} else {
+			q = p->bst_link[1];
+			free(p);
+		}
+	}
+}
+
+void
+bst_tree_size(struct bst_node *root, int *size)
+{
+	if (root == NULL)
+		return;
+	bst_tree_size(root->bst_link[0], size);
+	(*size)++;
+	bst_tree_size(root->bst_link[1], size);
+}
+
+int 
+bst_size(struct bst_table *t)
+{
+	int size;
+
+	if (t == NULL || t->bst_root == NULL)
+		return 0;
+
+	size = 0;
+	bst_tree_size(t->bst_root, &size);
+	return size;
+}
+
 
 int bst_int_cmp(void *a, void *b)
 {
@@ -124,21 +164,66 @@ int bst_int_cmp(void *a, void *b)
     return ret;
 }
 
-int main(void)
+void
+test_case_1(void)
 {
-    int i;
+    struct bst_table *t;
+
+    t = NULL;
+
+    printf("%d\n", bst_size(t));
+
+	bst_delete(t);
+    free(t);
+}
+
+void
+test_case_2(void)
+{
+	int arr[1] = {50}; 
+    struct bst_table *t;
+
+    t = bst_create(bst_int_cmp);
+
+    bst_insert(t, &arr[0]);
+    
+    bst_print(t->bst_root);
+    putchar('\n');
+
+    printf("%d\n", bst_size(t));
+
+	bst_delete(t);
+    free(t);
+}
+
+
+void
+test_case_3(void)
+{
     int arr[3] = {50, 20, 30}; 
     struct bst_table *t;
 
-    for (i = 0; i < 3; i++)
-        fprintf(stderr, "%p\n", &arr[i]);
     t = bst_create(bst_int_cmp);
 
     bst_insert(t, &arr[0]);
     bst_insert(t, &arr[1]);
     bst_insert(t, &arr[2]);
     
-//    bst_print(t->bst_root);
+    bst_print(t->bst_root);
+    putchar('\n');
+
+    printf("%d\n", bst_size(t));
+
+	bst_delete(t);
+    free(t);
+
+}
+
+int main(void)
+{
+	test_case_1();
+	test_case_2();
+	test_case_3();
 
     return 0;
 }
