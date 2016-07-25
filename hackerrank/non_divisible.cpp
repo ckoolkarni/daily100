@@ -16,7 +16,7 @@ class set_test {
 			int element;
 
 			cin >> n >> k; 
-			for (auto i = 0; i < n; i++ ) {
+			for (auto i = 0; i < n; ++i) {
 				cin >> element;
 				s.insert(element);
 			}
@@ -50,10 +50,9 @@ class set_test {
 			bool insert;
 
 			insert = true;
-
 			if (! present(ele)) {
-				for (auto k = subset.begin(); k != subset.end(); ++k) {
-					if (! not_evenly_divisible(ele + *k)) {
+				for (auto i = subset.begin(); i != subset.end(); ++i) {
+					if (! not_evenly_divisible(ele + *i)) {
 						insert = false;
 						break;
 					}	
@@ -61,7 +60,6 @@ class set_test {
 				if (insert == true)
 					subset.insert(ele);
 			}
-
 			return insert;
 		}
 		void find_set(void) 
@@ -71,19 +69,16 @@ class set_test {
 			for (auto i = s.begin(); i != s.end(); ++i) {
                 val = *i;
 				for (auto j = s.begin(); j != s.end(); ++j) {
+					/* can't avoid */
 					if (val == *j)
 						continue;
-					//cout << val << " + " << *j << " " << val + *j << " ";
 					if (not_evenly_divisible(val + *j)) {
 						process_element(val);
 						process_element(*j);
 					}
 				}
-				//cout << endl;
 			}
 
-			print_set();
-			print_subset();
 			cout << subset.size() << endl;
 		}
 };
